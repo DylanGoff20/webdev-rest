@@ -56,25 +56,64 @@ function dbRun(query, params) {
 /********************************************************************
  ***   REST REQUEST HANDLERS                                      *** 
  ********************************************************************/
-// GET request handler for crime codes
+
 app.get('/codes', (req, res) => {
-    console.log(req.query); // query object (key-value pairs after the ? in the url)
+    console.log(req.query);
     
-    res.status(200).type('json').send({}); // <-- you will need to change this
+    let query = 'SELECT code, incident_type as type FROM Codes ORDER BY code';
+    
+    dbSelect(query, []).then((codes) => {
+        if ('format' in req.query && req.query.format === 'plain') {
+            res.status(200).type('json').send(codes);
+        } else {
+            res.status(200).type('json').send('[\n' + codes.map(c => '  ' + JSON.stringify(c)).join(',\n') + '\n]');
+        }
+    }).catch((err) => {
+        console.error(err);
+        res.status(500).type('txt').send('Error retrieving codes');
+    });
 });
 
-// GET request handler for neighborhoods
+
 app.get('/neighborhoods', (req, res) => {
-    console.log(req.query); // query object (key-value pairs after the ? in the url)
+    console.log(req.query); 
     
-    res.status(200).type('json').send({}); // <-- you will need to change this
+    let query = 'SELECT neighborhood_number as id, neighborhood_name as name FROM Neighborhoods ORDER BY neighborhood_number';
+    
+    dbSelect(query, []).then((neighborhoods) => {
+        if ('format' in req.query && req.query.format === 'plain') {
+            res.status(200).type('json').send(neighborhoods);
+        } else {
+            res.status(200).type('json').send('[\n' + neighborhoods.map(n => '  ' + JSON.stringify(n)).join(',\n') + '\n]');
+        }
+    }).catch((err) => {
+        console.error(err);
+        res.status(500).type('txt').send('Error retrieving neighborhoods');
+    });
 });
 
-// GET request handler for crime incidents
+
 app.get('/incidents', (req, res) => {
-    console.log(req.query); // query object (key-value pairs after the ? in the url)
+    console.log(req.query); 
     
-    res.status(200).type('json').send({}); // <-- you will need to change this
+    let query = `SELECT case_number, 
+                 date(date_time) as date, 
+                 time(date_time) as time, 
+                 code, 
+                 incident, 
+                 police_grid, 
+                 neighborhood_number, 
+                 block 
+                 FROM Incidents 
+                 ORDER BY date_time DESC 
+                 LIMIT 1000`;
+    
+    dbSelect(query, []).then((incidents) => {
+        res.status(200).type('json').send(JSON.stringify(incidents, null, 2));
+    }).catch((err) => {
+        console.error(err);
+        res.status(500).type('txt').send('Error retrieving incidents');
+    });
 });
 
 // PUT request handler for new crime incident
