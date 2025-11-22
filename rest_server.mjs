@@ -117,17 +117,64 @@ app.get('/incidents', (req, res) => {
 });
 
 // PUT request handler for new crime incident
-app.put('/new-incident', (req, res) => {
+app.put('/new-incident', async (req, res) => {
     console.log(req.body); // uploaded data
     
-    res.status(200).type('txt').send('OK'); // <-- you may need to change this
+    try {
+        const { case_number, date, time, code, incident, police_grid, neighborhood_number, block } = req.body;
+        
+        // Check if case_number already exists
+        const existingCase = await dbSelect('SELECT case_number FROM Incidents WHERE case_number = ?', [case_number]);
+        
+        if (existingCase.length > 0) {
+            return res.status(500).type('txt').send('Case number already exists in database');
+        }
+        
+        // Combine date and time into SQLite datetime format
+        const date_time = `${date} ${time}`;
+        
+        // Insert new incident
+        const insertQuery = `INSERT INTO Incidents (case_number, date_time, code, incident, police_grid, neighborhood_number, block) 
+                             VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        
+        await dbRun(insertQuery, [case_number, date_time, code, incident, police_grid, neighborhood_number, block]);
+        
+        res.status(200).type('txt').send('OK');
+    } catch (err) {
+        console.error(err);
+        res.status(500).type('txt').send('Error inserting incident');
+    }
 });
 
 // DELETE request handler for new crime incident
-app.delete('/remove-incident', (req, res) => {
+app.delete('/remove-incident', async (req, res) => {
     console.log(req.body); // uploaded data
     
-    res.status(200).type('txt').send('OK'); // <-- you may need to change this
+    try {
+        const { case_number } = req.body;
+        
+       // console.log('Attempting to delete case_number:', case_number);
+        
+        // Check if case_number exists
+        const existingCase = await dbSelect('SELECT case_number FROM Incidents WHERE case_number = ?', [case_number]);
+        
+       // console.log('Found records:', existingCase.length);
+        
+        if (existingCase.length === 0) {
+            return res.status(500).type('txt').send('Case number does not exist in database');
+        }
+        
+        // Delete the incident
+        const deleteQuery = 'DELETE FROM Incidents WHERE case_number = ?';
+        await dbRun(deleteQuery, [case_number]);
+        
+       // console.log('Deleted case_number:', case_number);
+        
+        res.status(200).type('txt').send('OK');
+    } catch (err) {
+        console.error(err);
+        res.status(500).type('txt').send('Error deleting incident');
+    }
 });
 
 /********************************************************************
