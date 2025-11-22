@@ -7,8 +7,14 @@
         "email": "goff5435@stthomas.edu"
     },
     "contributors": [
+        {
+            "name": "Carter VanHaren"
+        },
+        {
+            "name": "Dylan Thomas"
+        }
     ],
-    "repository": {},
+    "repository": "https://github.com/DylanGoff20/webdev-rest",
     "dependencies": {
         "express": "^4.18.2",
         "sqlite3": "^5.1.6"
