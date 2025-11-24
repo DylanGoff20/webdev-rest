@@ -60,9 +60,24 @@ function dbRun(query, params) {
 app.get('/codes', (req, res) => {
     console.log(req.query);
     
-    let query = 'SELECT code, incident_type as type FROM Codes ORDER BY code';
+    let query = 'SELECT code, incident_type as type FROM Codes';
+    let params = [];
+    let conditions = [];
     
-    dbSelect(query, []).then((codes) => {
+
+    if (req.query.code) {
+        let codes = req.query.code.split(',').map(c => parseInt(c.trim()));
+        conditions.push(`code IN (${codes.map(() => '?').join(',')})`);
+        params.push(...codes);
+    }
+    
+    if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+    }
+    
+    query += ' ORDER BY code';
+    
+    dbSelect(query, params).then((codes) => {
         if ('format' in req.query && req.query.format === 'plain') {
             res.status(200).type('json').send(codes);
         } else {
@@ -78,9 +93,23 @@ app.get('/codes', (req, res) => {
 app.get('/neighborhoods', (req, res) => {
     console.log(req.query); 
     
-    let query = 'SELECT neighborhood_number as id, neighborhood_name as name FROM Neighborhoods ORDER BY neighborhood_number';
+    let query = 'SELECT neighborhood_number as id, neighborhood_name as name FROM Neighborhoods';
+    let params = [];
+    let conditions = [];
     
-    dbSelect(query, []).then((neighborhoods) => {
+    if (req.query.id) {
+        let ids = req.query.id.split(',').map(id => parseInt(id.trim()));
+        conditions.push(`neighborhood_number IN (${ids.map(() => '?').join(',')})`);
+        params.push(...ids);
+    }
+    
+    if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+    }
+    
+    query += ' ORDER BY neighborhood_number';
+    
+    dbSelect(query, params).then((neighborhoods) => {
         if ('format' in req.query && req.query.format === 'plain') {
             res.status(200).type('json').send(neighborhoods);
         } else {
@@ -104,11 +133,58 @@ app.get('/incidents', (req, res) => {
                  police_grid, 
                  neighborhood_number, 
                  block 
-                 FROM Incidents 
-                 ORDER BY date_time DESC 
-                 LIMIT 1000`;
+                 FROM Incidents`;
+    let params = [];
+    let conditions = [];
     
-    dbSelect(query, []).then((incidents) => {
+    // Filter by start_date if provided
+    if (req.query.start_date) {
+        conditions.push(`date(date_time) >= ?`);
+        params.push(req.query.start_date);
+    }
+    
+    // Filter by end_date if provided
+    if (req.query.end_date) {
+        conditions.push(`date(date_time) <= ?`);
+        params.push(req.query.end_date);
+    }
+    
+    // Filter by code if provided (comma separated list)
+    if (req.query.code) {
+        let codes = req.query.code.split(',').map(c => parseInt(c.trim()));
+        conditions.push(`code IN (${codes.map(() => '?').join(',')})`);
+        params.push(...codes);
+    }
+    
+    // Filter by grid if provided (comma separated list)
+    if (req.query.grid) {
+        let grids = req.query.grid.split(',').map(g => parseInt(g.trim()));
+        conditions.push(`police_grid IN (${grids.map(() => '?').join(',')})`);
+        params.push(...grids);
+    }
+    
+    // Filter by neighborhood if provided (comma separated list)
+    if (req.query.neighborhood) {
+        let neighborhoods = req.query.neighborhood.split(',').map(n => parseInt(n.trim()));
+        conditions.push(`neighborhood_number IN (${neighborhoods.map(() => '?').join(',')})`);
+        params.push(...neighborhoods);
+    }
+    
+    if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+    }
+    
+    query += ' ORDER BY date_time DESC';
+    
+    // Apply limit (default 1000)
+    let limit = 1000;
+    if (req.query.limit) {
+        limit = parseInt(req.query.limit);
+    }
+    query += ` LIMIT ?`;
+    params.push(limit);
+    
+    dbSelect(query, params).then((incidents) => {
         res.status(200).type('json').send(JSON.stringify(incidents, null, 2));
     }).catch((err) => {
         console.error(err);
