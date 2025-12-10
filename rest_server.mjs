@@ -7,10 +7,12 @@ import { default as sqlite3 } from 'sqlite3';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const db_filename = path.join(__dirname, 'db', 'stpaul_crime.sqlite3');
 
-const port = 8000;
+const port = process.env.PORT || 8000;
 
 let app = express();
 app.use(express.json());
+
+app.use(cors());  // Use the cors package you imported
 
 /********************************************************************
  ***   DATABASE FUNCTIONS                                         *** 
@@ -253,16 +255,6 @@ app.delete('/remove-incident', async (req, res) => {
     }
 });
 
-// Add CORS support - allow frontend to make requests
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
-});
 
 /********************************************************************
  ***   START SERVER                                               *** 
