@@ -16,6 +16,7 @@
     ],
     "repository": "https://github.com/DylanGoff20/webdev-rest",
     "dependencies": {
+        "cors": "^2.8.5",
         "express": "^4.18.2",
         "sqlite3": "^5.1.6"
     }
